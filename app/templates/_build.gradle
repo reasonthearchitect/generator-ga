@@ -1,0 +1,182 @@
+buildscript {
+    repositories {
+        mavenLocal()
+        jcenter()
+    }
+    dependencies {
+        classpath('org.springframework.boot:spring-boot-gradle-plugin:1.2.6.RELEASE')
+    }
+}
+
+apply plugin: 'java'
+sourceCompatibility=1.8
+targetCompatibility=1.8
+apply plugin: 'maven'
+apply plugin: 'spring-boot'
+apply plugin: 'war'
+apply plugin: 'groovy'
+apply plugin: 'idea'
+apply plugin: 'eclipse'
+defaultTasks 'bootRun'
+
+bootRepackage {
+   mainClass = '<%= packageName %>.Application'
+}
+
+springBoot {
+    mainClass = '<%= packageName %>.Application'
+}
+
+bootRun {
+    addResources = false
+}
+
+apply from: 'sonar.gradle'
+
+if (project.hasProperty('prod')) {
+    apply from: 'conf/profile_prod.gradle'
+} else if (project.hasProperty('fast')) {
+    apply from: 'conf/profile_fast.gradle'
+} else {
+  apply from: 'conf/profile_dev.gradle'
+}
+<% if (sql == 'yes') { %>
+apply from: 'conf/liquibase.gradle'<% } %>
+apply from: 'conf/mapstruct.gradle'
+
+configurations {
+    provided
+    //compile.extendsFrom provided
+}
+
+idea {
+    module {
+        scopes.PROVIDED.plus += [configurations.provided]
+    }
+}
+
+group = '<%= packageName %>'
+version = '0.0.1-SNAPSHOT'
+
+description = ''
+
+configurations {
+    providedRuntime
+}
+
+repositories {
+    maven { url 'http://repo.spring.io/milestone' }
+    maven { url 'http://repo.spring.io/snapshot' }
+    maven { url 'https://repository.jboss.org/nexus/content/repositories/releases' }
+    maven { url 'https://oss.sonatype.org/content/repositories/releases' }
+    maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+    maven { url 'http://repo.maven.apache.org/maven2' }
+}
+
+configurations.all {
+  resolutionStrategy {
+    // force certain versions of dependencies (including transitive)
+    //  *append new forced modules:
+    force group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: jackson_version
+    force group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: jackson_version
+    force group: 'joda-time', name: 'joda-time', version: joda_time_version
+
+  }
+}
+
+dependencies {
+
+    compile "org.projectlombok:lombok:1.16.6"
+
+    compile group: 'io.dropwizard.metrics', name: 'metrics-core'
+    compile group: 'io.dropwizard.metrics', name: 'metrics-graphite', version: dropwizard_metrics_version
+    compile group: 'io.dropwizard.metrics', name: 'metrics-healthchecks', version: dropwizard_metrics_version
+    compile group: 'io.dropwizard.metrics', name: 'metrics-jvm', version: dropwizard_metrics_version
+    compile group: 'io.dropwizard.metrics', name: 'metrics-servlet', version: dropwizard_metrics_version
+    compile group: 'io.dropwizard.metrics', name: 'metrics-json', version: dropwizard_metrics_version
+    compile (group: 'io.dropwizard.metrics', name: 'metrics-servlets', version: dropwizard_metrics_version) {
+        exclude(module: 'metrics-healthchecks')
+    }
+    compile group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-json-org', version: jackson_version
+    compile group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-hppc', version: jackson_version
+    compile group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-joda', version: jackson_version
+    compile group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-hibernate4', version: jackson_version
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: jackson_version
+    compile (group: 'com.ryantenney.metrics', name: 'metrics-spring', version: metrics_spring_version) {
+        exclude(module: 'metrics-core')
+        exclude(module: 'metrics-healthchecks')
+    } 
+    compile(group: 'com.zaxxer', name: 'HikariCP', version: HikariCP_version) {
+        exclude(module: 'tools')
+    }
+    compile group: 'commons-lang', name: 'commons-lang', version: commons_lang_version
+    compile group: 'commons-io', name: 'commons-io', version: commons_io_version
+    compile group: 'javax.inject', name: 'javax.inject', version: javax_inject_version
+    compile group: 'javax.transaction', name: 'javax.transaction-api'
+    compile group: 'joda-time', name: 'joda-time', version: joda_time_version<% if (sql == 'yes') { %>
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa'
+    compile group: 'joda-time', name: 'joda-time-hibernate', version: joda_time_hibernate_version
+    compile group: 'org.hibernate', name: 'hibernate-core', version: hibernate_entitymanager_version
+    compile group: 'org.hibernate', name: 'hibernate-envers'
+    compile group: 'org.jadira.usertype', name: 'usertype.core', version: usertype_core_version
+    compile (group: 'org.liquibase', name: 'liquibase-core', version: liquibase_core_version) {
+        exclude(module: 'jetty-servlet')
+    }
+    compile group: 'com.mattbertolini', name: 'liquibase-slf4j', version: liquibase_slf4j_version<% } %>
+    compile group: 'org.springframework.boot', name: 'spring-boot-actuator'
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-security'
+    compile group: 'org.springframework.boot', name: 'spring-boot-autoconfigure'
+    compile group: 'org.springframework.boot', name: 'spring-boot-loader-tools'
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-logging'
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-aop'
+    compile(group: 'org.springframework.boot', name: 'spring-boot-starter-web') {
+        exclude module: 'spring-boot-starter-tomcat'
+    }
+    compile(group: 'org.springframework', name: 'spring-context-support') {
+        exclude(module: 'quartz')
+    }
+    compile(group: 'io.springfox', name: 'springfox-swagger2', version: springfox_version){
+        exclude module: 'mapstruct'
+    }
+    compile group: 'fr.ippon.spark.metrics', name: 'metrics-spark-reporter', version: metrics_spark_reporter_version
+    compile group: 'org.mapstruct', name: 'mapstruct-jdk8', version: mapstruct_version
+    provided group: 'org.mapstruct', name: 'mapstruct-processor', version: mapstruct_version
+
+    <% if (elastic == 'yes') { %>
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-data-elasticsearch'<% } %>
+
+    compile group: 'com.h2database', name: 'h2' 
+    compile group: 'org.codehaus.groovy', name: 'groovy-all', version: groovy_all_version
+
+    testCompile group: 'com.jayway.awaitility', name: 'awaitility', version: awaility_version
+    testCompile group: 'com.jayway.jsonpath', name: 'json-path'
+    testCompile group: 'org.springframework.boot', name: 'spring-boot-starter-test'
+    testCompile group: 'org.springframework.boot', name: 'spring-boot-starter-jetty'
+	testCompile group: 'org.assertj', name: 'assertj-core', version: assertj_core_version
+    testCompile group: 'junit', name: 'junit'
+    testCompile group: 'org.mockito', name: 'mockito-core'
+    <% if (sql == 'yes') { %>
+    testCompile group: 'com.mattbertolini', name: 'liquibase-slf4j', version: liquibase_slf4j_version<% } %>
+
+    testCompile group: 'org.spockframework', name: 'spock-core', version: spock_version
+
+    // optional dependencies for using Spock
+    testCompile group: 'org.hamcrest', name: 'hamcrest-core', version: hamcrest_version
+    testCompile group: 'cglib', name: 'cglib-nodep', version: cglib_version
+
+    testCompile group: 'org.objenesis', name: 'objenesis', version: objenesis_version
+    testCompile group: 'org.jbehave', name: 'jbehave-core', version: jbehave_version
+    testCompile group: 'org.jbehave', name: 'jbehave-spring', version: jbehave_version
+
+}
+
+clean {
+    delete "target"
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.7'
+}
+
+task stage(dependsOn: 'bootRepackage') {
+}

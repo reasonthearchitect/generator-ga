@@ -1,0 +1,88 @@
+server:
+    port: 8080
+
+liquibase:
+    context: prod
+
+spring:
+    profiles:
+        active: prod
+    <%_ if (sql == 'yes') { _%>
+    datasource:
+        <%_ if (prodDatabaseType == 'oracle') { _%>
+        driverClassName: oracle.jdbc.OracleDriver
+        <%_ } _%>
+        <%_ if (prodDatabaseType == 'postgresql') { _%>
+        dataSourceClassName: org.postgresql.ds.PGSimpleDataSource
+        <%_ } else if (prodDatabaseType == 'oracle') { _%>
+        dataSourceClassName: oracle.jdbc.pool.OracleDataSource
+        <%_ } else { _%>
+        dataSourceClassName: org.hsqldb.jdbc.JDBCDataSource
+        <%_ } _%>
+        <%_ if (prodDatabaseType == 'postgresql') { _%>
+        url: 
+        <%_ } else if (prodDatabaseType == 'oracle') { _%>
+        url: jdbc:oracle:thin:@localhost:1521:<%= baseName %>
+        <%_ } _%>
+        databaseName: <% if (prodDatabaseType == 'postgresql') { %><%= baseName %><% } %>
+        serverName: <% if (prodDatabaseType == 'postgresql') { %>localhost<% } %>
+        <%_ if (prodDatabaseType == 'postgresql') { _%>
+        username: <%= baseName %>
+        <%_ } _%>
+        password: 
+
+    jpa:
+        <%_ if (prodDatabaseType == 'postgresql') { _%>
+        database-platform: <%=packageName%>.domain.util.FixedPostgreSQL82Dialect
+        <%_ } else if (prodDatabaseType == 'oracle') { _%>
+        database-platform: org.hibernate.dialect.Oracle10gDialect
+        <%_ } else { _%>
+        database-platform: org.hibernate.dialect.HSQLDialect
+        <%_ } _%> 
+        <%_ if (prodDatabaseType == 'postgresql') { _%>
+        database: POSTGRESQL
+        <%_ } else if (prodDatabaseType == 'oracle') { _%>
+        database: ORACLE
+        <%_ } _%>
+        openInView: false
+        show_sql: false
+        generate-ddl: false
+        hibernate:
+            ddl-auto: none
+            naming-strategy: org.springframework.boot.orm.jpa.hibernate.SpringNamingStrategy
+        properties:
+            hibernate.cache.use_second_level_cache: false
+            hibernate.cache.use_query_cache: false
+            hibernate.generate_statistics: false
+    <%_ } _%>
+
+    <%_ if (mongo == 'yes') { _%>
+    data:
+        mongodb:
+            host: localhost
+            port: 27017
+            database: <%= baseName %>
+
+    <%_ } _%>
+    <%_ if (elastic == 'yes') { _%>
+    data:
+        elasticsearch:
+            cluster-name:
+            cluster-nodes: localhost:9200
+    <%_ } _%>
+
+metrics:
+    jmx.enabled: true
+    spark:
+        enabled: false
+        host: localhost
+        port: 9999
+    graphite:
+        enabled: false
+        host: localhost
+        port: 2003
+        prefix: <%= baseName %>
+
+http:
+    cache:
+        timeToLiveInDays: 31
